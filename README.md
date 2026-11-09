@@ -1,29 +1,44 @@
-# CPG-RL · MuJoCo
+# CPG-RL & AllGaits · MuJoCo
 
-![Mini Cheetah와 CPG 상태를 보여주는 Viser 학습 모니터](viser-figure.png)
+**English** | [한국어](README.ko.md)
 
-Mini Cheetah용 MuJoCo 기반 CPG-RL/PPO 학습 환경. Python 3.10–3.13을 지원합니다.
+![Mini Cheetah and CPG states in the Viser training monitor](viser-figure.png)
+
+MuJoCo/PPO implementations of **CPG-RL** and **AllGaits**, adapted for the Mini Cheetah quadruped. Physics runs on CPU; the PPO learner supports CPU, CUDA and MPS. Requires Python 3.10–3.13.
+
+| Paper | Task | Implementation |
+|---|---|---|
+| [CPG-RL (2022)](https://arxiv.org/abs/2211.00458) | `mini_cheetah_cpg` (default) | 12 actions: per-leg amplitude, frequency and direction rate; uncoupled oscillators by default. |
+| [AllGaits (2024)](https://arxiv.org/abs/2411.04787) | `mini_cheetah_allgaits` | 8 actions: per-leg amplitude and frequency; gait coupling matrices for nine gaits, resampled every 3 seconds during training. |
+
+Both use **PPO → CPG → foot trajectories → IK → joint PD control**. These are unofficial adaptations: robot geometry, control gains, training ranges and phase encoding differ from the papers. The papers' reported performance and hardware experiments have not been reproduced here.
 
 ```bash
 python3.12 -m venv .venv
 source .venv/bin/activate
 pip install -e .
 
-# 학습 + Viser 웹 모니터 (http://127.0.0.1:8080)
+# CPG-RL training + Viser (http://127.0.0.1:8080)
 cpg-train --num_envs 64
 
-# 재개
-cpg-train --resume
+# AllGaits training + Viser
+cpg-train --task mini_cheetah_allgaits --num_envs 64
 
-# 재생 — model.pt를 실제 체크포인트 경로로 변경
+# Resume the latest run; select the same task used for training
+cpg-train --task mini_cheetah_allgaits --resume
+
+# Playback: replace model.pt with a checkpoint path
 cpg-play --checkpoint_path model.pt --headless
+cpg-play --task mini_cheetah_allgaits --checkpoint_path model.pt --gait trot --headless
 
-# 학습 로그
+# Training metrics
 tensorboard --logdir logs
 ```
 
-학습 시 Viser에서 로봇·속도·보상·CPG 상태를 확인할 수 있습니다. `--headless`로 끄고, `--viewer_port 8081`로 포트를 변경합니다. 화면 재생은 `--headless`를 생략합니다. macOS에서는 `mjpython -m legged_gym.scripts.play --checkpoint_path model.pt`를 사용합니다.
+Viser shows the robot, rewards, CPG states and AllGaits coupling matrices. Orange arrows indicate commanded velocity; green arrows indicate actual velocity. Commands use the robot's body frame, with `Front (+X)` marking forward. Use `--headless` to disable Viser or `--viewer_port 8081` to change its port.
 
-체크포인트는 `logs/`에 저장됩니다. 재개·재생에는 같은 폴더의 `run_config.json`이 필요합니다. 설정은 `legged_gym/envs/mini_cheetah/config.py`, 추가 옵션은 각 명령의 `--help`를 확인하세요.
+For native playback, omit `--headless`. On macOS, replace `cpg-play` with `mjpython -m legged_gym.scripts.play`. AllGaits playback accepts a fixed `--gait` or `--gait random` for transitions every 3 seconds.
 
-라이선스: `LICENSE`, `licenses/`. 로봇 자산 출처·관성 보정 내역: `resources/robots/provenance.json` (자산 재배포 조건은 별도 확인 필요).
+Checkpoints are saved under `logs/`. Resume and playback require the matching `--task` and the checkpoint's adjacent `run_config.json`. Configuration: [config.py](legged_gym/envs/mini_cheetah/config.py). More options: `cpg-train --help` and `cpg-play --help`.
+
+Licenses: [LICENSE](LICENSE), [licenses/](licenses/). Robot asset sources, inertia corrections and redistribution notes: [provenance.json](resources/robots/provenance.json).

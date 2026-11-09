@@ -12,10 +12,24 @@ import numpy as np
 
 
 def inverse_kinematics(feet, lengths=(0.062, 0.209, 0.18)):
-    """Abduction-frame XYZ -> (abad, hip, knee), for the MJCF's -Y pitch axes.
+    """Torso-aligned XYZ at each abduction origin -> (abad, hip, knee).
 
-    The negative knee branch matches the supplied joint ranges. Unreachable radial
-    targets are projected before solving; the environment also enforces joint limits.
+    Input shape is (num_envs, 4, 3), ordered FR, FL, HR, HL. Targets refer to
+    the foot sphere centers (MJCF foot sites), not the ground contact points.
+    The input axes do NOT rotate with the actuated abduction body.
+
+    For roll a, hip h, knee k and side s=(-1,+1,-1,+1), the MJCF has
+    +X abduction and -Y hip/knee axes. Its forward kinematics is:
+        D = l2*cos(h) + l3*cos(h+k)
+        x = l2*sin(h) + l3*sin(h+k)
+        y = s*l1*cos(a) + D*sin(a)
+        z = s*l1*sin(a) - D*cos(a)
+    We select the downward-leg branch D >= 0 and negative knee angle.
+    Thus the hip solution uses atan2(+x, D), consistent with the -Y axes.
+
+    Radial projection and numerical clamps keep unreachable inputs finite;
+    they are not a joint-limit-aware Cartesian projection. The environment
+    clips joint angles separately, which can change the achieved foot position.
     """
     l1, l2, l3 = lengths
     feet = np.asarray(feet, dtype=float)
@@ -47,6 +61,7 @@ class CPG:
         self.clearance = np.full((num_envs, 1), cfg.clearance)
         self.offsets = np.array([0, np.pi, np.pi, 0])
         self.phase_bias = self.offsets[None, :] - self.offsets[:, None]
+        self.coupling_weights = cfg.coupling_strength * (np.ones((4, 4)) - np.eye(4))
 
     def reset(self, ids, rng):
         self.r[ids], self.mu[ids] = 1.0, 1.0
@@ -84,7 +99,7 @@ class CPG:
         if self.cfg.coupling_strength:
             delta = self.theta[:, None, :] - self.theta[:, :, None] - self.phase_bias
             # Coupling affects phase derivative, never the policy's intrinsic omega.
-            self.theta_dot += self.cfg.coupling_strength * (self.r[:, None, :] * np.sin(delta)).sum(axis=2)
+            self.theta_dot += (self.coupling_weights * self.r[:, None, :] * np.sin(delta)).sum(axis=2)
         self.theta[:] = (self.theta + self.theta_dot * self.dt) % (2 * np.pi)
         self.phi[:] = (self.phi + self.psi * self.dt + np.pi) % (2 * np.pi) - np.pi
         return self.feet()

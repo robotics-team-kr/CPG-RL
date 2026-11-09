@@ -30,8 +30,17 @@
 
 from legged_gym.utils.task_registry import task_registry
 
-from .mini_cheetah.config import MiniCheetahCfg, MiniCheetahJointCfg, MiniCheetahJointPPO, MiniCheetahPPO
+from .mini_cheetah.allgaits import MiniCheetahAllGaits
+from .mini_cheetah.config import (
+    MiniCheetahAllGaitsCfg,
+    MiniCheetahAllGaitsPPO,
+    MiniCheetahCfg,
+    MiniCheetahJointCfg,
+    MiniCheetahJointPPO,
+    MiniCheetahPPO,
+)
 from .mini_cheetah.mini_cheetah import MiniCheetah
 
 task_registry.register("mini_cheetah_cpg", MiniCheetah, MiniCheetahCfg(), MiniCheetahPPO())
 task_registry.register("mini_cheetah_joint", MiniCheetah, MiniCheetahJointCfg(), MiniCheetahJointPPO())
+task_registry.register("mini_cheetah_allgaits", MiniCheetahAllGaits, MiniCheetahAllGaitsCfg(), MiniCheetahAllGaitsPPO())

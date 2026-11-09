@@ -9,12 +9,16 @@ from legged_gym.envs.base.legged_robot import LeggedRobot
 
 
 class MiniCheetah(LeggedRobot):
+    cpg_type = CPG
+
     def __init__(self, cfg, **kwargs):
         if cfg.control.mode not in ("cpg", "joint") or cfg.env.observation not in ("full", "medium"):
             raise ValueError("Expected cpg/joint control and full/medium observations")
-        self.cpg = CPG(cfg.env.num_envs, cfg.cpg, cfg.sim.dt)
+        self.cpg = self.cpg_type(cfg.env.num_envs, cfg.cpg, cfg.sim.dt)
         self.cpg.reset(np.arange(cfg.env.num_envs), np.random.default_rng(cfg.seed))
         feet = self.cpg.feet()[:1].copy()
+        # Nominal posture must not depend on sampled geometry or batch size.
+        feet[:, :, 0] = getattr(cfg.cpg, "foot_offset", 0.0)
         feet[:, :, 2] = -cfg.cpg.height
         nominal = inverse_kinematics(feet, cfg.cpg.link_lengths)[0]
         cfg.init_state.default_joint_angles = dict(zip(cfg.asset.joint_names, nominal.tolist()))
@@ -56,8 +60,8 @@ class MiniCheetah(LeggedRobot):
         self.reset_buf = self.terminated_buf | self.time_out_buf
 
     def compute_observations(self, ids=None):
-        # Full: command(3), body velocity/gravity(9), contacts(4), joints(24),
-        # previous policy action(12), CPG(32) = 84. Medium CPG = 48.
+        # Command(3), body(9), contacts(4), optional joints(24)/last action,
+        # and CPG feedback: full/medium CPG = 84/48, AllGaits = 68/36.
         body = np.concatenate((self.base_lin_vel, self.base_ang_vel, self.projected_gravity), axis=1)
         joints = np.concatenate((self.dof_pos - self.default_dof_pos, self.dof_vel * 0.05), axis=1)
         if self.cfg.noise.add_noise:

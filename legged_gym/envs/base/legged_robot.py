@@ -32,8 +32,11 @@ class LeggedRobot(VecEnv):
         self.rng = np.random.default_rng(cfg.seed)
         self.sim = MujocoBatch(cfg, self.rng)
         self.dof_names = list(cfg.asset.joint_names)
-        if len(self.dof_names) != self.num_actions or len(set(self.dof_names)) != self.num_actions:
-            raise ValueError("Provide one unique joint name per action")
+        self.num_dof = len(self.dof_names)
+        if not self.num_dof or len(set(self.dof_names)) != self.num_dof:
+            raise ValueError("Provide unique joint names")
+        if getattr(cfg.control, "mode", "joint") == "joint" and self.num_dof != self.num_actions:
+            raise ValueError("Joint control requires one action per joint")
         self.default_dof_pos = joint_parameters(self.dof_names, cfg.init_state.default_joint_angles, 0.0)
         self.p_gains = joint_parameters(self.dof_names, cfg.control.stiffness)
         self.d_gains = joint_parameters(self.dof_names, cfg.control.damping)
@@ -61,7 +64,7 @@ class LeggedRobot(VecEnv):
         shape = (self.num_envs, self.num_actions)
         self.actions = np.zeros(shape)
         self.last_actions = np.zeros(shape)
-        self.dof_acc = np.zeros(shape)
+        self.dof_acc = np.zeros((self.num_envs, self.num_dof))
         self.commands = np.zeros((self.num_envs, 3))
         self.command_ranges = np.array(cfg.commands.ranges, dtype=float, copy=True)
         self._next_push = np.zeros(self.num_envs)
@@ -95,7 +98,7 @@ class LeggedRobot(VecEnv):
         }
         self._liftoff_count = np.zeros(self.num_envs)
         self.rew_buf = np.zeros(self.num_envs)
-        policy_width = 11 + 3 * self.num_actions
+        policy_width = 11 + 2 * self.num_dof + self.num_actions
         self._critic_obs_work = np.empty((self.num_envs, policy_width + 3 + 6 * feet_shape[1]))
         self._policy_obs_work = np.empty((self.num_envs, policy_width))
         self._obs_noise_scale = np.zeros(policy_width)
@@ -419,7 +422,7 @@ class LeggedRobot(VecEnv):
         np.sin(angle, out=clean[:, 9])
         np.cos(angle, out=clean[:, 10])
         clean[np.linalg.norm(self.commands, axis=1) < 0.1, 9:11] = 0
-        n = self.num_actions
+        n = self.num_dof
         np.subtract(self.dof_pos, self.default_dof_pos, out=clean[:, 11 : 11 + n])
         clean[:, 11 + n : 11 + 2 * n] = self.dof_vel
         clean[:, 11 + 2 * n :] = self.actions

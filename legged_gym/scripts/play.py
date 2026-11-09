@@ -159,6 +159,8 @@ def evaluate(env, policy, args, cfg):
         "domain_randomization": False,
         "reset_distribution": "Task root XY/yaw and configured CPG geometry, controlled by evaluation seeds",
     }
+    if hasattr(env.cfg, "gait"):
+        protocol["gait"] = class_to_dict(env.cfg.gait)
     protocol_digest = hashlib.sha256(json.dumps(protocol, sort_keys=True).encode()).hexdigest()
     report = {
         "task": args.task,

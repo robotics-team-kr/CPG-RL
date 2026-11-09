@@ -97,7 +97,11 @@ def get_load_path(root, load_run=-1, checkpoint=-1):
 
 def get_args(argv=None, *, playback=False):
     parser = argparse.ArgumentParser(description="Mini Cheetah: CPU MuJoCo physics + PPO")
-    parser.add_argument("--task", choices=["mini_cheetah_cpg", "mini_cheetah_joint"], default="mini_cheetah_cpg")
+    parser.add_argument(
+        "--task",
+        choices=["mini_cheetah_cpg", "mini_cheetah_joint", "mini_cheetah_allgaits"],
+        default="mini_cheetah_cpg",
+    )
     parser.add_argument("--rl_device", "--rl-device", default="auto")
     parser.add_argument("--num_envs", "--num-envs", type=int)
     parser.add_argument("--num_threads", "--num-threads", type=int)
@@ -106,7 +110,12 @@ def get_args(argv=None, *, playback=False):
     parser.add_argument("--max_iterations", "--max-iterations", type=int)
     parser.add_argument("--learning_rate", type=float)
     parser.add_argument("--observation", choices=["full", "medium"])
-    parser.add_argument("--coupling", type=float, help="CPG coupling strength; default 0 (paper)")
+    parser.add_argument("--coupling", type=float, help="Coupling weight: CPG default 0, AllGaits default 10")
+    parser.add_argument(
+        "--gait",
+        help="AllGaits only: random (resample every 3s), walk, amble, trot, pace, "
+        "bound, pronk, canter, transverse_gallop, rotary_gallop",
+    )
     parser.add_argument("--randomize_geometry", action="store_true", default=None)
     parser.add_argument("--experiment_name")
     parser.add_argument("--run_name")
@@ -128,6 +137,8 @@ def get_args(argv=None, *, playback=False):
         parser.add_argument("--eval_seeds", nargs="+", type=int)
         parser.add_argument("--eval_output")
     args = parser.parse_args(argv)
+    if args.gait is not None and args.task != "mini_cheetah_allgaits":
+        parser.error("--gait requires --task mini_cheetah_allgaits")
     if not playback:
         if args.viewer_port is not None and not 1 <= args.viewer_port <= 65535:
             parser.error("viewer_port must be between 1 and 65535")
@@ -179,6 +190,12 @@ def update_cfg_from_args(env_cfg, train_cfg, args):
             env_cfg.cpg.coupling_strength = args.coupling
         if args.randomize_geometry is not None:
             env_cfg.cpg.randomize_geometry = args.randomize_geometry
+        if getattr(args, "gait", None) is not None:
+            if args.gait != "random" and args.gait not in env_cfg.cpg.gait_contact_times:
+                raise ValueError(
+                    f"Unknown gait {args.gait!r}; choose random or {', '.join(env_cfg.cpg.gait_contact_times)}"
+                )
+            env_cfg.gait.name = args.gait
     if train_cfg is not None:
         # Explicit invocation controls visibility, including resumes of old headless runs.
         train_cfg.viewer.enabled = not args.headless

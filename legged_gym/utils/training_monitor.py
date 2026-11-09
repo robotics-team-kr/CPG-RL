@@ -55,6 +55,29 @@ class TrainingMonitor:
             self.scene.camera_tracking_enabled = False
             self.scene.site_groups_visible = [False] * 6
             self.scene.geom_groups_visible = [True, True, True, False, False, False]
+            self.body_axes = self.server.scene.add_frame(
+                "/motion/body", axes_length=0.15, axes_radius=0.003, origin_radius=0.005
+            )
+            self.server.scene.add_label("/motion/body/front", "Front (+X)", position=(0.2, 0, 0))
+            points = np.zeros((1, 2, 3), dtype=np.float32)
+            self.command_arrow = self.server.scene.add_arrows(
+                "/motion/command",
+                points,
+                (245, 158, 11),
+                shaft_radius=0.006,
+                head_radius=0.015,
+                head_length=0.035,
+                visible=False,
+            )
+            self.velocity_arrow = self.server.scene.add_arrows(
+                "/motion/actual",
+                points,
+                (34, 197, 94),
+                shaft_radius=0.006,
+                head_radius=0.015,
+                head_length=0.035,
+                visible=False,
+            )
             self._make_gui(task, cfg.max_fps)
             self._publish_frame(self._snapshot(0))
 
@@ -149,6 +172,10 @@ class TrainingMonitor:
             frame["cpg"] = np.stack(
                 (cpg.r[index], cpg.mu[index], cpg.omega[index] / (2 * np.pi), cpg.theta[index], cpg.phi[index])
             ).copy()
+            if hasattr(cpg, "gait_names"):
+                frame["gait"] = cpg.gait_names[cpg.gait_ids[index]]
+                frame["phase_bias"] = cpg.phase_bias[index].copy()
+                frame["coupling_weights"] = cpg.coupling_weights.copy()
         return frame
 
     def _step(self, *args):
@@ -234,9 +261,23 @@ class TrainingMonitor:
                     client.camera.position = np.asarray(client.camera.position) + delta
                     client.camera.look_at = np.asarray(client.camera.look_at) + delta
             command, velocity = frame["command"], frame["velocity"]
+            # Use the exact rendered body pose, not a world-axis interpretation
+            # of the body-frame velocity commands. Both arrows share its frame.
+            body_id = self.env.sim.root_id
+            rotation = self.data.xmat[body_id].reshape(3, 3)
+            origin = self.data.xpos[body_id]
+            self.body_axes.position = origin + np.array([0, 0, 0.16])
+            self.body_axes.wxyz = self.data.xquat[body_id]
+            for arrow, vector, height in ((self.command_arrow, command, 0.25), (self.velocity_arrow, velocity, 0.32)):
+                start = origin + np.array([0, 0, height])
+                delta = rotation @ np.array([vector[0], vector[1], 0.0]) * 0.5
+                arrow.points = np.array([[start, start + delta]], dtype=np.float32)
+                arrow.visible = np.linalg.norm(delta) > 0.005
             contacts = " / ".join("contact" if value else "air" for value in frame["contacts"])
             self.motion.content = (
                 f"**Environment {frame['env']}**\n\n"
+                "**Body frame:** +X forward · +Y left · +Yaw left turn.\n\n"
+                "**Orange:** command · **Green:** actual XY velocity (0.5 s scale).\n\n"
                 "| | Command | Actual |\n|---|---:|---:|\n"
                 f"| X / Forward m/s | {command[0]:.2f} | {velocity[0]:.2f} |\n"
                 f"| Y / Lateral m/s | {command[1]:.2f} | {velocity[1]:.2f} |\n"
@@ -247,7 +288,17 @@ class TrainingMonitor:
                 rows = ["| Leg | r | μ | Hz | θ rad | φ rad |", "|---|---:|---:|---:|---:|---:|"]
                 for leg, values in zip(("FR", "FL", "HR", "HL"), frame["cpg"].T):
                     rows.append(f"| {leg} | " + " | ".join(f"{v:.2f}" for v in values) + " |")
-                self.cpg_status.content = "**CPG state**\n\n" + "\n".join(rows)
+                content = "**CPG state**\n\n" + "\n".join(rows)
+                if "gait" in frame:
+                    content += f"\n\n**Gait: {frame['gait']}** · FR / FL / HR / HL"
+                    for label, matrix in (
+                        ("W", frame["coupling_weights"]),
+                        ("Φ / 2π", frame["phase_bias"] / (2 * np.pi)),
+                    ):
+                        content += f"\n\n{label}\n\n| | FR | FL | HR | HL |\n|---|---:|---:|---:|---:|\n"
+                        for leg, row in zip(("FR", "FL", "HR", "HL"), matrix):
+                            content += f"| {leg} | " + " | ".join(f"{value:.2f}" for value in row) + " |\n"
+                self.cpg_status.content = content
             history = np.asarray(self._velocity_history, dtype=float).T
             self.velocity_plot.data = tuple(history[[0, 1, 2]])
             self.lateral_velocity_plot.data = tuple(history[[0, 3, 4]])

@@ -223,7 +223,7 @@ class MujocoBatch:
             friction = self.batch.expand("geom_friction")
             ids = [self.model.geom(name).id for name in foot_geom_names(cfg)]
             friction[:, ids, 0] = rng.uniform(*cfg.domain_rand.friction_range, (cfg.env.num_envs, 1))
-        self.encoder_bias = np.zeros((cfg.env.num_envs, cfg.env.num_actions))
+        self.encoder_bias = np.zeros((cfg.env.num_envs, len(cfg.asset.joint_names)))
         if cfg.domain_rand.randomize_encoder_bias:
             self.encoder_bias[:] = rng.uniform(*cfg.domain_rand.encoder_bias_range, self.encoder_bias.shape)
         if cfg.domain_rand.randomize_com:

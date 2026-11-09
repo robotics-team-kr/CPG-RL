@@ -5,6 +5,7 @@ no observation noise or dynamics randomization. Mini Cheetah geometry, PD gains,
 command ranges and periodic phase encoding differ from the paper's Unitree A1.
 """
 
+from legged_gym.envs.base.allgaits import GAIT_CONTACT_TIMES
 from legged_gym.envs.base.legged_robot_config import LeggedRobotCfg, LeggedRobotCfgPPO
 
 LEGS = ("fr", "fl", "hr", "hl")
@@ -109,3 +110,50 @@ class MiniCheetahPPO(LeggedRobotCfgPPO):
 class MiniCheetahJointPPO(MiniCheetahPPO):
     class runner(MiniCheetahPPO.runner):
         experiment_name = "mini_cheetah_joint"
+
+
+class MiniCheetahAllGaitsCfg(MiniCheetahCfg):
+    """AllGaits-inspired forward locomotion; Mini Cheetah, not the paper's Go1.
+
+    Uses the paper's coupling, 8-D action, implicit gait feedback, transition
+    interval and reward structure. Keeps this project's PD/dynamics settings
+    and narrower speed/geometry ranges; this is not a full reproduction.
+    """
+
+    class env(MiniCheetahCfg.env):
+        num_actions = 8
+
+    class cpg(MiniCheetahCfg.cpg):
+        coupling_strength = 10.0  # W_ij for i != j; W_ii = 0.
+        gait_contact_times = GAIT_CONTACT_TIMES
+        frequency_range = [0.0, 8.0]
+        randomize_geometry = True
+        foot_offset = 0.0
+        foot_offset_range = [-0.02, 0.02]
+        penetration_range = [0.0, 0.01]
+
+    class gait:
+        # This is an external command, like velocity; it is not a policy input.
+        name = "random"
+        resampling_time = 3.0
+
+    class commands(MiniCheetahCfg.commands):
+        ranges = [[0.2, 0.8], [0.0, 0.0], [0.0, 0.0]]
+        limit_ranges = ranges
+        standing_fraction = 0.0
+
+    class rewards(MiniCheetahCfg.rewards):
+        # AllGaits Table I; the base class applies dt once.
+        scales = {"tracking_x": 3.0, "lateral_vertical_velocity": -2.0, "all_body_ang_vel": -0.1, "power": -0.001}
+
+
+class MiniCheetahAllGaitsPPO(MiniCheetahPPO):
+    class runner(MiniCheetahPPO.runner):
+        experiment_name = "mini_cheetah_allgaits"
+
+    class evaluation(MiniCheetahPPO.evaluation):
+        commands = {
+            "forward_slow": ([0.2, 0, 0], [0.2, 0, 0]),
+            "forward_medium": ([0.2, 0, 0], [0.5, 0, 0]),
+            "forward_fast": ([0.2, 0, 0], [0.8, 0, 0]),
+        }
