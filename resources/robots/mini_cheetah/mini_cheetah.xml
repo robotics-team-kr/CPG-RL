@@ -1,0 +1,153 @@
+<mujoco model="mini_cheetah">
+  <!-- URDF inertials; fixed toes merged with parallel-axis theorem.
+       Thigh tensors minimally corrected to satisfy principal-moment triangle inequality.
+       Exact sources and corrections: ../provenance.json. -->
+  <compiler angle="radian" autolimits="true" meshdir="meshes" inertiafromgeom="false" />
+  <default>
+    <default class="mini">
+      <joint damping="0.05" armature="0.011" />
+      <default class="visual">
+        <geom type="mesh" contype="0" conaffinity="0" group="2" rgba="0.7 0.7 0.7 1" />
+      </default>
+      <default class="collision">
+        <geom type="capsule" group="3" contype="0" conaffinity="1" friction="0.8 0.02 0.01" />
+        <default class="hip_collision">
+          <geom type="capsule" size="0.03 0.03" quat="1 1 0 0" />
+        </default>
+        <default class="thigh1">
+          <geom size="0.018" fromto="0 0 0 0 0 -0.11" />
+        </default>
+        <default class="thigh2">
+          <geom size="0.018" fromto="0 0 -0.11 0 0 -0.21" />
+        </default>
+        <default class="calf1">
+          <geom size="0.014" fromto="0 0 0 0 0 -0.11" />
+        </default>
+        <default class="calf2">
+          <geom size="0.014" fromto="0 0 -0.11 0 0 -0.18" />
+        </default>
+        <default class="foot">
+          <geom type="sphere" size="0.0175" pos="0 0 -0.18" condim="6" priority="1" friction="1.0 0.02 0.01" solimp="0.015 1 0.031" solref="0.002 1" />
+        </default>
+      </default>
+      <default class="abduction">
+        <joint axis="1 0 0" damping="0.05" range="-0.8 0.8" />
+      </default>
+      <default class="hip">
+        <joint axis="0 -1 0" damping="0.05" range="-1.2 4.2" />
+      </default>
+      <default class="knee">
+        <joint axis="0 -1 0" damping="0.05" armature="0.01" range="-2.7 -0.8" />
+      </default>
+    </default>
+  </default>
+  <asset>
+    <mesh name="mini_body" file="mini_body.stl" />
+    <mesh name="mini_abad" file="mini_abad.stl" />
+    <mesh name="mini_upper_link" file="mini_upper_link.stl" />
+    <mesh name="mini_lower_link" file="mini_lower_link.stl" />
+  </asset>
+  <worldbody>
+    <body name="body" pos="0 0 0.5" childclass="mini">
+      <inertial mass="3.3" pos="0 0 0" fullinertia="0.011253 0.036203 0.042673 0 0 0" />
+      <freejoint />
+      <camera name="track" pos="1.958 -2.348 0.591" xyaxes="0.768 0.641 0.000 -0.101 0.122 0.987" mode="trackcom" />
+      <geom class="visual" mesh="mini_body" mass="0" />
+      <geom type="box" size="0.11 0.04 0.05" group="3" contype="0" conaffinity="1" friction="0.8 0.02 0.01" name="body_1_collision" />
+      <site name="imu_frame" pos="0 0 0" quat="1 0 0 0" />
+      <body name="abduct_fr" pos="0.19 -0.049 0">
+        <inertial mass="0.54" pos="0 0.036 0" fullinertia="0.000381 0.00056 0.000444 5.8e-05 4.5e-07 9.5e-07" />
+        <joint class="abduction" name="torso_to_abduct_fr_j" />
+        <geom class="visual" mesh="mini_abad" pos="-0.055 0 0" quat="0 0.7071 0.7071 0" mass="0" />
+        <geom class="hip_collision" pos="0 -0.04 0" name="abduct_fr_1_collision" />
+        <body name="thigh_fr" pos="0 -0.062 0">
+          <inertial mass="0.634" pos="0 0.016 -0.02" fullinertia="0.0019906519413919 0.0020953495903882 0.00044018841219396 0.00021373336124293 1.2806126781228e-05 1.2529642489963e-06" />
+          <joint class="hip" name="abduct_fr_to_thigh_fr_j" />
+          <geom class="visual" mesh="mini_upper_link" quat="0.7071 0 -0.7071 0" mass="0" />
+          <geom class="thigh1" name="thigh_fr_1_collision" />
+          <geom class="thigh2" name="thigh_fr_2_collision" />
+          <body name="lower_leg_front_right" pos="0 0 -0.209">
+            <inertial mass="0.214" pos="0 0 -0.188672897196" fullinertia="0.000307727102804 0.000310727102804 3.1e-05 0 0 0" />
+            <joint class="knee" name="thigh_fr_to_knee_fr_j" />
+            <geom class="visual" mesh="mini_lower_link" quat="0 0 1 0" mass="0" />
+            <geom class="calf1" name="lower_leg_front_right_1_collision" />
+            <geom class="calf2" name="lower_leg_front_right_2_collision" />
+            <geom class="foot" name="lower_leg_front_right_foot_collision" />
+            <site name="foot_front_right" pos="0 0 -0.18" />
+          </body>
+        </body>
+      </body>
+      <body name="abduct_fl" pos="0.19 0.049 0">
+        <inertial mass="0.54" pos="0 0.036 0" fullinertia="0.000381 0.00056 0.000444 5.8e-05 4.5e-07 9.5e-07" />
+        <joint class="abduction" name="torso_to_abduct_fl_j" />
+        <geom class="visual" mesh="mini_abad" pos="-0.055 0 0" quat="0.7071 0 0 -0.7071" mass="0" />
+        <geom class="hip_collision" pos="0 0.04 0" name="abduct_fl_1_collision" />
+        <body name="thigh_fl" pos="0 0.062 0">
+          <inertial mass="0.634" pos="0 0.016 -0.02" fullinertia="0.0019906519413919 0.0020953495903882 0.00044018841219396 0.00021373336124293 1.2806126781228e-05 1.2529642489963e-06" />
+          <joint class="hip" name="abduct_fl_to_thigh_fl_j" />
+          <geom class="visual" mesh="mini_upper_link" quat="0.7071 0 -0.7071 0" mass="0" />
+          <geom class="thigh1" name="thigh_fl_1_collision" />
+          <geom class="thigh2" name="thigh_fl_2_collision" />
+          <body name="lower_leg_front_left" pos="0 0 -0.209">
+            <inertial mass="0.214" pos="0 0 -0.188672897196" fullinertia="0.000307727102804 0.000310727102804 3.1e-05 0 0 0" />
+            <joint class="knee" name="thigh_fl_to_knee_fl_j" />
+            <geom class="visual" mesh="mini_lower_link" quat="0 0 1 0" mass="0" />
+            <geom class="calf1" name="lower_leg_front_left_1_collision" />
+            <geom class="calf2" name="lower_leg_front_left_2_collision" />
+            <geom class="foot" name="lower_leg_front_left_foot_collision" />
+            <site name="foot_front_left" pos="0 0 -0.18" />
+          </body>
+        </body>
+      </body>
+      <body name="abduct_hr" pos="-0.19 -0.049 0">
+        <inertial mass="0.54" pos="0 0.036 0" fullinertia="0.000381 0.00056 0.000444 5.8e-05 4.5e-07 9.5e-07" />
+        <joint class="abduction" name="torso_to_abduct_hr_j" />
+        <geom class="visual" mesh="mini_abad" pos="0.055 0 0" quat="0.7071 0 0 0.7071" mass="0" />
+        <geom class="hip_collision" pos="0 -0.04 0" name="abduct_hr_1_collision" />
+        <body name="thigh_hr" pos="0 -0.062 0">
+          <inertial mass="0.634" pos="0 0.016 -0.02" fullinertia="0.0019906519413919 0.0020953495903882 0.00044018841219396 0.00021373336124293 1.2806126781228e-05 1.2529642489963e-06" />
+          <joint class="hip" name="abduct_hr_to_thigh_hr_j" />
+          <geom class="visual" mesh="mini_upper_link" quat="0.7071 0 -0.7071 0" mass="0" />
+          <geom class="thigh1" name="thigh_hr_1_collision" />
+          <geom class="thigh2" name="thigh_hr_2_collision" />
+          <body name="lower_leg_hind_right" pos="0 0 -0.209">
+            <inertial mass="0.214" pos="0 0 -0.188672897196" fullinertia="0.000307727102804 0.000310727102804 3.1e-05 0 0 0" />
+            <joint class="knee" name="thigh_hr_to_knee_hr_j" />
+            <geom class="visual" mesh="mini_lower_link" quat="0 0 1 0" mass="0" />
+            <geom class="calf1" name="lower_leg_hind_right_1_collision" />
+            <geom class="calf2" name="lower_leg_hind_right_2_collision" />
+            <geom class="foot" name="lower_leg_hind_right_foot_collision" />
+            <site name="foot_hind_right" pos="0 0 -0.18" />
+          </body>
+        </body>
+      </body>
+      <body name="abduct_hl" pos="-0.19 0.049 0">
+        <inertial mass="0.54" pos="0 0.036 0" fullinertia="0.000381 0.00056 0.000444 5.8e-05 4.5e-07 9.5e-07" />
+        <joint class="abduction" name="torso_to_abduct_hl_j" />
+        <geom class="visual" mesh="mini_abad" pos="0.055 0 0" quat="0 0.7071 -0.7071 0" mass="0" />
+        <geom class="hip_collision" pos="0 0.04 0" name="abduct_hl_1_collision" />
+        <body name="thigh_hl" pos="0 0.062 0">
+          <inertial mass="0.634" pos="0 0.016 -0.02" fullinertia="0.0019906519413919 0.0020953495903882 0.00044018841219396 0.00021373336124293 1.2806126781228e-05 1.2529642489963e-06" />
+          <joint class="hip" name="abduct_hl_to_thigh_hl_j" />
+          <geom class="visual" mesh="mini_upper_link" quat="0.7071 0 -0.7071 0" mass="0" />
+          <geom class="thigh1" name="thigh_hl_1_collision" />
+          <geom class="thigh2" name="thigh_hl_2_collision" />
+          <body name="lower_leg_hind_left" pos="0 0 -0.209">
+            <inertial mass="0.214" pos="0 0 -0.188672897196" fullinertia="0.000307727102804 0.000310727102804 3.1e-05 0 0 0" />
+            <joint class="knee" name="thigh_hl_to_knee_hl_j" />
+            <geom class="visual" mesh="mini_lower_link" quat="0 0 1 0" mass="0" />
+            <geom class="calf1" name="lower_leg_hind_left_1_collision" />
+            <geom class="calf2" name="lower_leg_hind_left_2_collision" />
+            <geom class="foot" name="lower_leg_hind_left_foot_collision" />
+            <site name="foot_hind_left" pos="0 0 -0.18" />
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <sensor>
+    <gyro name="imu_ang_vel" site="imu_frame" />
+    <velocimeter name="imu_lin_vel" site="imu_frame" />
+    <subtreeangmom name="root_angmom" body="body" />
+  </sensor>
+</mujoco>

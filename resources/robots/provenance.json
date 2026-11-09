@@ -1,0 +1,67 @@
+{
+  "source": "quadruped-team/mini_cheetah_mjcf/mini_cheetah_mjcf",
+  "source_mjcf_sha256": "3621dc32f4626ca4ae71a802841a12b04622443a651ea81aa3276637552edcec",
+  "source_urdf_sha256": "35a83afa055f827ebb9975164995e6f72162511c5c439e465904f690c1d58554",
+  "total_mass_kg": 8.852,
+  "inertials": "All 13 moving bodies use URDF mass, COM and full tensor. Fixed 0.15 kg toes merged into 0.064 kg shanks with parallel-axis theorem. Body inertia axes follow URDF. URDF COM signs retained as supplied (not mirrored or inferred).",
+  "geometry": "Original MJCF joint frames, axes, meshes and lengths 0.062/0.209/0.18 m retained. IMU aligned to body. Visual meshes have no inferred mass. Runtime installs 12 ordered PD actuators and floor/contact sensors.",
+  "asset_license": "No model license file was present in the supplied quadruped-team tree; no license for these assets is inferred.",
+  "inertia_repair": {
+    "method": "URDF thigh tensors violate the rigid-body principal-moment triangle inequality. Apply minimum Frobenius-norm correction in principal axes: add excess/3 to the two smaller moments and subtract excess/3 from the largest (1e-10 margin). Preserve eigenvectors, mass and COM. No global balanceinertia averaging.",
+    "bodies": {
+      "thigh_fr": {
+        "original_principal_inertia": [
+          0.0004078925412357755,
+          0.0017908225928030745,
+          0.002295284865961151
+        ],
+        "corrected_principal_inertia": [
+          0.00044008248520987586,
+          0.001823012536777175,
+          0.0022630949219870507
+        ]
+      },
+      "thigh_fl": {
+        "original_principal_inertia": [
+          0.0004078925412357755,
+          0.0017908225928030745,
+          0.002295284865961151
+        ],
+        "corrected_principal_inertia": [
+          0.00044008248520987586,
+          0.001823012536777175,
+          0.0022630949219870507
+        ]
+      },
+      "thigh_hr": {
+        "original_principal_inertia": [
+          0.0004078925412357755,
+          0.0017908225928030745,
+          0.002295284865961151
+        ],
+        "corrected_principal_inertia": [
+          0.00044008248520987586,
+          0.001823012536777175,
+          0.0022630949219870507
+        ]
+      },
+      "thigh_hl": {
+        "original_principal_inertia": [
+          0.0004078925412357755,
+          0.0017908225928030745,
+          0.002295284865961151
+        ],
+        "corrected_principal_inertia": [
+          0.00044008248520987586,
+          0.001823012536777175,
+          0.0022630949219870507
+        ]
+      }
+    }
+  },
+  "code_sources": {
+    "legged-gym-mujoco": "Base environment, CPU batch simulator, task/runner layout and evaluation; BSD-3-Clause with Apache-2.0 MDP adaptation.",
+    "CPG-RL": "Reference CPG equations/action mapping and PPO settings; EPFL MIT notice retained.",
+    "paper": "https://arxiv.org/abs/2211.00458"
+  }
+}

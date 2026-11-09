@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cpg-rl-mujoco"
+version = "0.1.0"
+description = "Mini Cheetah CPG locomotion with CPU MuJoCo and PPO"
+requires-python = ">=3.10,<3.14"
+license-files = ["LICENSE", "licenses/*"]
+dependencies = ["mujoco==3.17.0", "rsl-rl-lib==5.5.2", "torch>=2.6,<3", "numpy>=1.26,<3", "tensordict>=0.7,<1", "tensorboard"]
+
+[project.scripts]
+cpg-train = "legged_gym.scripts.train:main"
+cpg-play = "legged_gym.scripts.play:main"
+
+[tool.setuptools.package-dir]
+"legged_gym.resources" = "resources"
+
+[tool.setuptools.package-data]
+"legged_gym.resources" = ["robots/*.json", "robots/mini_cheetah/*.xml", "robots/mini_cheetah/meshes/*.stl", "robots/mini_cheetah/urdf/*.urdf"]
+
+[tool.setuptools]
+packages = ["legged_gym", "legged_gym.envs", "legged_gym.envs.base", "legged_gym.envs.mini_cheetah", "legged_gym.sim", "legged_gym.scripts", "legged_gym.utils", "legged_gym.resources"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
