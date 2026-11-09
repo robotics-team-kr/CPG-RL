@@ -115,7 +115,11 @@ def get_args(argv=None, *, playback=False):
     parser.add_argument("--load_run", default="-1")
     parser.add_argument("--checkpoint", type=int, default=-1)
     parser.add_argument("--checkpoint_path", "--checkpoint-path")
-    parser.add_argument("--headless", action="store_true")
+    parser.add_argument("--headless", action="store_true", help="Disable the training web monitor or playback viewer")
+    if not playback:
+        parser.add_argument("--viewer_host", help="Viser bind address (default: 127.0.0.1)")
+        parser.add_argument("--viewer_port", type=int, help="Viser port (default: 8080)")
+        parser.add_argument("--viewer_fps", type=float, help="Maximum display rate (default: 15)")
     if playback:
         parser.add_argument("--steps", type=int)
         parser.add_argument("--velocity", type=float, nargs=3, metavar=("VX", "VY", "WZ"))
@@ -124,6 +128,11 @@ def get_args(argv=None, *, playback=False):
         parser.add_argument("--eval_seeds", nargs="+", type=int)
         parser.add_argument("--eval_output")
     args = parser.parse_args(argv)
+    if not playback:
+        if args.viewer_port is not None and not 1 <= args.viewer_port <= 65535:
+            parser.error("viewer_port must be between 1 and 65535")
+        if args.viewer_fps is not None and (not math.isfinite(args.viewer_fps) or args.viewer_fps <= 0):
+            parser.error("viewer_fps must be finite and positive")
     for name in ("num_envs", "max_iterations", "torch_threads", "steps"):
         value = getattr(args, name, None)
         if value is not None and value <= 0:
@@ -171,6 +180,12 @@ def update_cfg_from_args(env_cfg, train_cfg, args):
         if args.randomize_geometry is not None:
             env_cfg.cpg.randomize_geometry = args.randomize_geometry
     if train_cfg is not None:
+        # Explicit invocation controls visibility, including resumes of old headless runs.
+        train_cfg.viewer.enabled = not args.headless
+        for arg, field in (("viewer_host", "host"), ("viewer_port", "port"), ("viewer_fps", "max_fps")):
+            value = getattr(args, arg, None)
+            if value is not None:
+                setattr(train_cfg.viewer, field, value)
         if args.learning_rate is not None:
             train_cfg.algorithm.learning_rate = args.learning_rate
         for key in ("max_iterations", "experiment_name", "run_name"):

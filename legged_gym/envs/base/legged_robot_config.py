@@ -130,7 +130,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         }
 
     class viewer:
-        enabled = False
+        enabled = True
         history_points = 500
         host = "127.0.0.1"
         max_fps = 15

@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Mini Cheetah CPG locomotion with CPU MuJoCo and PPO"
 requires-python = ">=3.10,<3.14"
 license-files = ["LICENSE", "licenses/*"]
-dependencies = ["mujoco==3.17.0", "rsl-rl-lib==5.5.2", "torch>=2.6,<3", "numpy>=1.26,<3", "tensordict>=0.7,<1", "tensorboard"]
+dependencies = ["mujoco==3.17.0", "rsl-rl-lib==5.5.2", "torch>=2.6,<3", "numpy>=1.26,<3", "tensordict>=0.7,<1", "tensorboard", "viser>=1.1.1,<2", "mjviser==0.0.12"]
 
 [project.scripts]
 cpg-train = "legged_gym.scripts.train:main"
