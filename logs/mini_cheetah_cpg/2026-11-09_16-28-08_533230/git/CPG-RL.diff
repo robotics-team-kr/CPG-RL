@@ -1,0 +1,149 @@
+--- git commit ---
+5b9c09b723574e3a6a43561b549bea32085ff6ce
+
+
+--- git status ---
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   README.md
+	modified:   legged_gym/envs/base/legged_robot_config.py
+	modified:   legged_gym/scripts/train.py
+	modified:   legged_gym/utils/helpers.py
+	modified:   pyproject.toml
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.gitignore
+	legged_gym/utils/training_monitor.py
+
+no changes added to commit (use "git add" and/or "git commit -a") 
+
+
+--- git diff ---
+diff --git a/README.md b/README.md
+index 74629ac..689f288 100644
+--- a/README.md
++++ b/README.md
+@@ -7,11 +7,11 @@ python3.12 -m venv .venv
+ source .venv/bin/activate
+ pip install -e .
+ 
+-# 학습
+-cpg-train --num_envs 64 --headless
++# 학습 + Viser 웹 모니터 (http://127.0.0.1:8080)
++cpg-train --num_envs 64
+ 
+ # 재개
+-cpg-train --resume --headless
++cpg-train --resume
+ 
+ # 재생 — model.pt를 실제 체크포인트 경로로 변경
+ cpg-play --checkpoint_path model.pt --headless
+@@ -20,7 +20,7 @@ cpg-play --checkpoint_path model.pt --headless
+ tensorboard --logdir logs
+ ```
+ 
+-화면 재생은 `--headless`를 생략합니다. macOS에서는 `mjpython -m legged_gym.scripts.play --checkpoint_path model.pt`를 사용합니다.
++학습 시 Viser에서 로봇·속도·보상·CPG 상태를 확인할 수 있습니다. `--headless`로 끄고, `--viewer_port 8081`로 포트를 변경합니다. 화면 재생은 `--headless`를 생략합니다. macOS에서는 `mjpython -m legged_gym.scripts.play --checkpoint_path model.pt`를 사용합니다.
+ 
+ 체크포인트는 `logs/`에 저장됩니다. 재개·재생에는 같은 폴더의 `run_config.json`이 필요합니다. 설정은 `legged_gym/envs/mini_cheetah/config.py`, 추가 옵션은 각 명령의 `--help`를 확인하세요.
+ 
+diff --git a/legged_gym/envs/base/legged_robot_config.py b/legged_gym/envs/base/legged_robot_config.py
+index 3f58f13..50cf0e4 100644
+--- a/legged_gym/envs/base/legged_robot_config.py
++++ b/legged_gym/envs/base/legged_robot_config.py
+@@ -130,7 +130,7 @@ class LeggedRobotCfgPPO(BaseConfig):
+         }
+ 
+     class viewer:
+-        enabled = False
++        enabled = True
+         history_points = 500
+         host = "127.0.0.1"
+         max_fps = 15
+diff --git a/legged_gym/scripts/train.py b/legged_gym/scripts/train.py
+index db4f348..4e0cbc0 100644
+--- a/legged_gym/scripts/train.py
++++ b/legged_gym/scripts/train.py
+@@ -8,12 +8,22 @@ from legged_gym.utils import get_args
+ def train(args):
+     env_cfg, train_cfg = task_registry.get_cfgs(args.task, args)
+     env, _ = task_registry.make_env(args.task, args, env_cfg, train_cfg)
++    monitor = None
+     try:
+         runner, cfg = task_registry.make_alg_runner(env, args.task, args, train_cfg)
+         print(f"MuJoCo CPU: {env.num_envs} envs / {env.sim.batch.nthread} workers; PPO: {runner.device}")
+         print(f"Logs: {runner.logger.log_dir}")
++        if cfg.viewer.enabled:
++            from legged_gym.utils.training_monitor import TrainingMonitor
++
++            monitor = TrainingMonitor(env, runner, cfg.viewer, task=args.task)
++            print(f"Training monitor: {monitor.url}", flush=True)
++        else:
++            print("Viser monitor disabled (--headless). Remove --headless to enable the web viewer.", flush=True)
+         runner.learn(cfg.runner.max_iterations, init_at_random_ep_len=not (args.resume or args.checkpoint_path))
+     finally:
++        if monitor is not None:
++            monitor.close()
+         env.close()
+ 
+ 
+diff --git a/legged_gym/utils/helpers.py b/legged_gym/utils/helpers.py
+index 9fff227..3f8d241 100644
+--- a/legged_gym/utils/helpers.py
++++ b/legged_gym/utils/helpers.py
+@@ -115,7 +115,11 @@ def get_args(argv=None, *, playback=False):
+     parser.add_argument("--load_run", default="-1")
+     parser.add_argument("--checkpoint", type=int, default=-1)
+     parser.add_argument("--checkpoint_path", "--checkpoint-path")
+-    parser.add_argument("--headless", action="store_true")
++    parser.add_argument("--headless", action="store_true", help="Disable the training web monitor or playback viewer")
++    if not playback:
++        parser.add_argument("--viewer_host", help="Viser bind address (default: 127.0.0.1)")
++        parser.add_argument("--viewer_port", type=int, help="Viser port (default: 8080)")
++        parser.add_argument("--viewer_fps", type=float, help="Maximum display rate (default: 15)")
+     if playback:
+         parser.add_argument("--steps", type=int)
+         parser.add_argument("--velocity", type=float, nargs=3, metavar=("VX", "VY", "WZ"))
+@@ -124,6 +128,11 @@ def get_args(argv=None, *, playback=False):
+         parser.add_argument("--eval_seeds", nargs="+", type=int)
+         parser.add_argument("--eval_output")
+     args = parser.parse_args(argv)
++    if not playback:
++        if args.viewer_port is not None and not 1 <= args.viewer_port <= 65535:
++            parser.error("viewer_port must be between 1 and 65535")
++        if args.viewer_fps is not None and (not math.isfinite(args.viewer_fps) or args.viewer_fps <= 0):
++            parser.error("viewer_fps must be finite and positive")
+     for name in ("num_envs", "max_iterations", "torch_threads", "steps"):
+         value = getattr(args, name, None)
+         if value is not None and value <= 0:
+@@ -171,6 +180,12 @@ def update_cfg_from_args(env_cfg, train_cfg, args):
+         if args.randomize_geometry is not None:
+             env_cfg.cpg.randomize_geometry = args.randomize_geometry
+     if train_cfg is not None:
++        # Explicit invocation controls visibility, including resumes of old headless runs.
++        train_cfg.viewer.enabled = not args.headless
++        for arg, field in (("viewer_host", "host"), ("viewer_port", "port"), ("viewer_fps", "max_fps")):
++            value = getattr(args, arg, None)
++            if value is not None:
++                setattr(train_cfg.viewer, field, value)
+         if args.learning_rate is not None:
+             train_cfg.algorithm.learning_rate = args.learning_rate
+         for key in ("max_iterations", "experiment_name", "run_name"):
+diff --git a/pyproject.toml b/pyproject.toml
+index da0da19..ed57ee9 100644
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -8,7 +8,7 @@ version = "0.1.0"
+ description = "Mini Cheetah CPG locomotion with CPU MuJoCo and PPO"
+ requires-python = ">=3.10,<3.14"
+ license-files = ["LICENSE", "licenses/*"]
+-dependencies = ["mujoco==3.17.0", "rsl-rl-lib==5.5.2", "torch>=2.6,<3", "numpy>=1.26,<3", "tensordict>=0.7,<1", "tensorboard"]
++dependencies = ["mujoco==3.17.0", "rsl-rl-lib==5.5.2", "torch>=2.6,<3", "numpy>=1.26,<3", "tensordict>=0.7,<1", "tensorboard", "viser>=1.1.1,<2", "mjviser==0.0.12"]
+ 
+ [project.scripts]
+ cpg-train = "legged_gym.scripts.train:main"

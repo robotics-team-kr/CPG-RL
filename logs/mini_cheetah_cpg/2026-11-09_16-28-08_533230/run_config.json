@@ -1,0 +1,616 @@
+{
+  "task": "mini_cheetah_cpg",
+  "env": {
+    "asset": {
+      "feet": [
+        "lower_leg_front_right",
+        "lower_leg_front_left",
+        "lower_leg_hind_right",
+        "lower_leg_hind_left"
+      ],
+      "file": "mini_cheetah/mini_cheetah.xml",
+      "foot_geoms": [
+        "lower_leg_front_right_foot_collision",
+        "lower_leg_front_left_foot_collision",
+        "lower_leg_hind_right_foot_collision",
+        "lower_leg_hind_left_foot_collision"
+      ],
+      "foot_sites": [
+        "foot_front_right",
+        "foot_front_left",
+        "foot_hind_right",
+        "foot_hind_left"
+      ],
+      "foot_solimp": [
+        0.9,
+        0.95,
+        0.001,
+        0.5,
+        2
+      ],
+      "joint_names": [
+        "torso_to_abduct_fr_j",
+        "abduct_fr_to_thigh_fr_j",
+        "thigh_fr_to_knee_fr_j",
+        "torso_to_abduct_fl_j",
+        "abduct_fl_to_thigh_fl_j",
+        "thigh_fl_to_knee_fl_j",
+        "torso_to_abduct_hr_j",
+        "abduct_hr_to_thigh_hr_j",
+        "thigh_hr_to_knee_hr_j",
+        "torso_to_abduct_hl_j",
+        "abduct_hl_to_thigh_hl_j",
+        "thigh_hl_to_knee_hl_j"
+      ],
+      "mass_body": "body",
+      "root_body": "body"
+    },
+    "commands": {
+      "curriculum": false,
+      "expansion_step": 120000,
+      "heading_command": false,
+      "heading_fraction": 1.0,
+      "heading_range": [
+        -3.141592653589793,
+        3.141592653589793
+      ],
+      "heading_stiffness": 0.5,
+      "initial_stage_ranges": [
+        [
+          -0.5,
+          1
+        ],
+        [
+          -0.5,
+          0.5
+        ],
+        [
+          -1,
+          1
+        ]
+      ],
+      "limit_ranges": [
+        [
+          -0.5,
+          0.8
+        ],
+        [
+          -0.3,
+          0.3
+        ],
+        [
+          -0.6,
+          0.6
+        ]
+      ],
+      "ranges": [
+        [
+          -0.5,
+          0.8
+        ],
+        [
+          -0.3,
+          0.3
+        ],
+        [
+          -0.6,
+          0.6
+        ]
+      ],
+      "resampling_time_range": [
+        5.0,
+        5.0
+      ],
+      "standing_fraction": 0.1
+    },
+    "control": {
+      "action_scale": 0.25,
+      "armature": {
+        ".*": 0.01
+      },
+      "clip_actions": 1.0,
+      "damping": {
+        ".*": 1.0
+      },
+      "decimation": 10,
+      "effort_limits": {
+        ".*": 25.0
+      },
+      "frictionloss": 0.0,
+      "mode": "cpg",
+      "stiffness": {
+        ".*": 35.0
+      }
+    },
+    "cpg": {
+      "amplitude_range": [
+        1.0,
+        2.0
+      ],
+      "clearance": 0.05,
+      "clearance_range": [
+        0.03,
+        0.07
+      ],
+      "convergence": 150.0,
+      "coupling_strength": 0.0,
+      "direction_rate_range": [
+        -1.5,
+        1.5
+      ],
+      "frequency_range": [
+        0.0,
+        4.5
+      ],
+      "height": 0.28,
+      "height_range": [
+        0.26,
+        0.3
+      ],
+      "link_lengths": [
+        0.062,
+        0.209,
+        0.18
+      ],
+      "penetration": 0.005,
+      "randomize_geometry": false,
+      "step_length": 0.08
+    },
+    "domain_rand": {
+      "com_range": [
+        -0.05,
+        0.05
+      ],
+      "encoder_bias_range": [
+        -0.015,
+        0.015
+      ],
+      "friction_range": [
+        0.3,
+        1.6
+      ],
+      "push_interval_s": [
+        5,
+        6
+      ],
+      "push_robots": false,
+      "push_velocity_ranges": [
+        [
+          -0.5,
+          0.5
+        ],
+        [
+          -0.5,
+          0.5
+        ],
+        [
+          -0.4,
+          0.4
+        ],
+        [
+          -0.52,
+          0.52
+        ],
+        [
+          -0.52,
+          0.52
+        ],
+        [
+          -0.78,
+          0.78
+        ]
+      ],
+      "randomize_com": false,
+      "randomize_encoder_bias": false,
+      "randomize_friction": false
+    },
+    "env": {
+      "episode_length_s": 20.0,
+      "num_actions": 12,
+      "num_envs": 4096,
+      "observation": "full"
+    },
+    "init_state": {
+      "default_joint_angles": {
+        "torso_to_abduct_fr_j": 0.0,
+        "abduct_fr_to_thigh_fr_j": 0.6978238175873317,
+        "thigh_fr_to_knee_fr_j": -1.539970073267487,
+        "torso_to_abduct_fl_j": 0.0,
+        "abduct_fl_to_thigh_fl_j": 0.6978238175873317,
+        "thigh_fl_to_knee_fl_j": -1.539970073267487,
+        "torso_to_abduct_hr_j": 0.0,
+        "abduct_hr_to_thigh_hr_j": 0.6978238175873317,
+        "thigh_hr_to_knee_hr_j": -1.539970073267487,
+        "torso_to_abduct_hl_j": 0.0,
+        "abduct_hl_to_thigh_hl_j": 0.6978238175873317,
+        "thigh_hl_to_knee_hl_j": -1.539970073267487
+      },
+      "pos": [
+        0,
+        0,
+        0.2975
+      ]
+    },
+    "noise": {
+      "add_noise": false,
+      "ang_vel": 0.2,
+      "gravity": 0.05,
+      "joint_pos": 0.01,
+      "joint_vel": 1.5
+    },
+    "rewards": {
+      "command_threshold": 0.1,
+      "contact_history_length": 4,
+      "feet_clearance_target": 0.1,
+      "gait_offsets": [
+        0,
+        0.5
+      ],
+      "gait_period": 0.6,
+      "gait_stance_fraction": 0.56,
+      "pose_std_running": {
+        ".*": 0.3
+      },
+      "pose_std_standing": {
+        ".*": 0.3
+      },
+      "pose_std_walking": {
+        ".*": 0.3
+      },
+      "scales": {
+        "tracking_x": 0.75,
+        "tracking_y": 0.75,
+        "tracking_yaw": 0.5,
+        "vertical_velocity": -2.0,
+        "body_ang_vel": -0.05,
+        "work": -0.001
+      },
+      "soft_dof_pos_limit": 0.9
+    },
+    "seed": 42,
+    "sim": {
+      "ccd_iterations": 50,
+      "cone": "pyramidal",
+      "dt": 0.001,
+      "iterations": 10,
+      "ls_iterations": 20,
+      "ls_tolerance": 0.01,
+      "nthread": 4,
+      "persistent": false,
+      "tolerance": 1e-08
+    },
+    "termination": {
+      "illegal_contact_threshold": 1.0,
+      "max_tilt": 1.05
+    }
+  },
+  "train": {
+    "algorithm": {
+      "clip_param": 0.2,
+      "desired_kl": 0.01,
+      "entropy_coef": 0.01,
+      "gamma": 0.99,
+      "lam": 0.95,
+      "learning_rate": 0.001,
+      "max_grad_norm": 1.0,
+      "num_learning_epochs": 5,
+      "num_mini_batches": 4,
+      "schedule": "adaptive",
+      "use_clipped_value_loss": true,
+      "value_loss_coef": 1.0
+    },
+    "evaluation": {
+      "commands": {
+        "stand": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "forward": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0.5,
+            0,
+            0
+          ]
+        ],
+        "backward": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            -0.5,
+            0,
+            0
+          ]
+        ],
+        "left": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0.3,
+            0
+          ]
+        ],
+        "right": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            -0.3,
+            0
+          ]
+        ],
+        "turn_left": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0.5
+          ]
+        ],
+        "turn_right": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            -0.5
+          ]
+        ],
+        "combined": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0.5,
+            0.3,
+            0.5
+          ]
+        ],
+        "stop": [
+          [
+            0.5,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "duration_s": 5.0,
+      "num_envs": 16,
+      "seeds": [
+        0,
+        1,
+        2
+      ],
+      "settling_hold_s": 0.5,
+      "velocity_tolerance": [
+        0.1,
+        0.1,
+        0.15
+      ],
+      "warmup_s": 2.0
+    },
+    "policy": {
+      "activation": "elu",
+      "actor_hidden_dims": [
+        512,
+        256,
+        128
+      ],
+      "critic_hidden_dims": [
+        512,
+        256,
+        128
+      ],
+      "init_noise_std": 1.0,
+      "obs_normalization": true
+    },
+    "runner": {
+      "algorithm": "ppo",
+      "experiment_name": "mini_cheetah_cpg",
+      "max_iterations": 3000,
+      "num_steps_per_env": 24,
+      "run_name": "",
+      "save_interval": 100
+    },
+    "seed": 42,
+    "viewer": {
+      "enabled": true,
+      "history_points": 500,
+      "host": "127.0.0.1",
+      "max_fps": 15,
+      "port": 8080
+    }
+  },
+  "rl_device": "mps",
+  "versions": {
+    "mujoco": "3.17.0",
+    "rsl-rl-lib": "5.5.2",
+    "torch": "2.15.0"
+  },
+  "contract": {
+    "version": 3,
+    "robot": "mini_cheetah/mini_cheetah.xml",
+    "asset_sha256": "b15f9f9c86470d206d6f7187cc327729971b246e1d6574aa560e18406f761150",
+    "joint_names": [
+      "torso_to_abduct_fr_j",
+      "abduct_fr_to_thigh_fr_j",
+      "thigh_fr_to_knee_fr_j",
+      "torso_to_abduct_fl_j",
+      "abduct_fl_to_thigh_fl_j",
+      "thigh_fl_to_knee_fl_j",
+      "torso_to_abduct_hr_j",
+      "abduct_hr_to_thigh_hr_j",
+      "thigh_hr_to_knee_hr_j",
+      "torso_to_abduct_hl_j",
+      "abduct_hl_to_thigh_hl_j",
+      "thigh_hl_to_knee_hl_j"
+    ],
+    "policy_obs": 84,
+    "critic_obs": 84,
+    "sim_dt": 0.001,
+    "decimation": 10,
+    "action_scale": 0.25,
+    "clip_actions": 1.0,
+    "default_joint_pos": [
+      0.0,
+      0.6978238175873317,
+      -1.539970073267487,
+      0.0,
+      0.6978238175873317,
+      -1.539970073267487,
+      0.0,
+      0.6978238175873317,
+      -1.539970073267487,
+      0.0,
+      0.6978238175873317,
+      -1.539970073267487
+    ],
+    "kp": [
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0,
+      35.0
+    ],
+    "kd": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "effort_limits": [
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0,
+      25.0
+    ],
+    "armature": {
+      ".*": 0.01
+    },
+    "frictionloss": 0.0,
+    "foot_sites": [
+      "foot_front_right",
+      "foot_front_left",
+      "foot_hind_right",
+      "foot_hind_left"
+    ],
+    "solver_settings": {
+      "iterations": 10,
+      "cone": "pyramidal",
+      "ls_iterations": 20,
+      "tolerance": 1e-08,
+      "ls_tolerance": 0.01,
+      "ccd_iterations": 50
+    },
+    "control_mode": "cpg",
+    "observation_mode": "full",
+    "cpg": {
+      "amplitude_range": [
+        1.0,
+        2.0
+      ],
+      "clearance": 0.05,
+      "clearance_range": [
+        0.03,
+        0.07
+      ],
+      "convergence": 150.0,
+      "coupling_strength": 0.0,
+      "direction_rate_range": [
+        -1.5,
+        1.5
+      ],
+      "frequency_range": [
+        0.0,
+        4.5
+      ],
+      "height": 0.28,
+      "height_range": [
+        0.26,
+        0.3
+      ],
+      "link_lengths": [
+        0.062,
+        0.209,
+        0.18
+      ],
+      "penetration": 0.005,
+      "randomize_geometry": false,
+      "step_length": 0.08
+    },
+    "contact_settings": {
+      "foot_geoms": [
+        "lower_leg_front_right_foot_collision",
+        "lower_leg_front_left_foot_collision",
+        "lower_leg_hind_right_foot_collision",
+        "lower_leg_hind_left_foot_collision"
+      ],
+      "foot_solimp": [
+        0.9,
+        0.95,
+        0.001,
+        0.5,
+        2
+      ]
+    }
+  }
+}
