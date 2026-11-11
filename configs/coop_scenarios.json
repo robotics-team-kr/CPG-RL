@@ -1,0 +1,10 @@
+{
+  "split": "test",
+  "training_terrain_seeds": [40, 41, 42, 43, 44],
+  "scenarios": [
+    {"id": "flat_walk", "seed": 1000, "gait": "walk", "speed": 0.4, "terrain": "flat", "terrain_seed": 1000},
+    {"id": "raised_trot", "seed": 1001, "gait": "trot", "speed": 0.4, "terrain": "raised", "terrain_seed": 1001, "terrain_height": 0.025},
+    {"id": "lowered_walk", "seed": 1002, "gait": "walk", "speed": 0.4, "terrain": "lowered", "terrain_seed": 1002, "terrain_height": 0.025},
+    {"id": "irregular_trot", "seed": 1003, "gait": "trot", "speed": 0.4, "terrain": "irregular", "terrain_seed": 1003, "terrain_height": 0.025}
+  ]
+}

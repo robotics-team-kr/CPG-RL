@@ -87,7 +87,7 @@ class CPG:
         self.omega *= 2 * np.pi
         self.psi *= 2 * np.pi
 
-    def step(self):
+    def step(self, phase_rate=None):
         # r'' + a r' + a^2/4 (r-mu) = 0, exact over one physics tick.
         k = self.cfg.convergence / 2
         error = self.r - self.mu
@@ -100,6 +100,11 @@ class CPG:
             delta = self.theta[:, None, :] - self.theta[:, :, None] - self.phase_bias
             # Coupling affects phase derivative, never the policy's intrinsic omega.
             self.theta_dot += (self.coupling_weights * self.r[:, None, :] * np.sin(delta)).sum(axis=2)
+        if phase_rate is not None:
+            phase_rate = np.asarray(phase_rate)
+            if phase_rate.shape != self.theta.shape or not np.isfinite(phase_rate).all():
+                raise ValueError("Phase rate must be finite and match oscillator shape")
+            self.theta_dot += phase_rate
         self.theta[:] = (self.theta + self.theta_dot * self.dt) % (2 * np.pi)
         self.phi[:] = (self.phi + self.psi * self.dt + np.pi) % (2 * np.pi) - np.pi
         return self.feet()

@@ -1,0 +1,6 @@
+prune docs
+prune logs
+prune results
+recursive-include configs *.json
+recursive-include tests *.py
+include README.ko.md

@@ -28,12 +28,18 @@ class MiniCheetah(LeggedRobot):
     def _before_physics(self):
         self.previous_dof_vel[:] = self.dof_vel
         if self.cfg.control.mode == "cpg":
-            self.cpg.set_actions(self.actions)
+            self.cpg.set_actions(self._get_cpg_actions())
+
+    def _get_cpg_actions(self):
+        return self.actions
+
+    def _get_cpg_feet(self):
+        return self.cpg.step()
 
     def _compute_targets(self):
         if self.cfg.control.mode == "joint":
             return super()._compute_targets()
-        targets = inverse_kinematics(self.cpg.step(), self.cfg.cpg.link_lengths) - self.sim.encoder_bias
+        targets = inverse_kinematics(self._get_cpg_feet(), self.cfg.cpg.link_lengths) - self.sim.encoder_bias
         limits = self.sim.model.jnt_range[self.sim.joint_ids]
         return np.clip(targets, limits[:, 0], limits[:, 1])
 

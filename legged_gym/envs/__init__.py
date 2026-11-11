@@ -39,8 +39,12 @@ from .mini_cheetah.config import (
     MiniCheetahJointPPO,
     MiniCheetahPPO,
 )
+from .mini_cheetah.coop_allgaits import MiniCheetahCoopAllGaits
+from .mini_cheetah.coop_config import MiniCheetahCoopCfg
 from .mini_cheetah.mini_cheetah import MiniCheetah
 
 task_registry.register("mini_cheetah_cpg", MiniCheetah, MiniCheetahCfg(), MiniCheetahPPO())
 task_registry.register("mini_cheetah_joint", MiniCheetah, MiniCheetahJointCfg(), MiniCheetahJointPPO())
 task_registry.register("mini_cheetah_allgaits", MiniCheetahAllGaits, MiniCheetahAllGaitsCfg(), MiniCheetahAllGaitsPPO())
+
+task_registry.register("mini_cheetah_coop_allgaits", MiniCheetahCoopAllGaits, MiniCheetahCoopCfg(), MiniCheetahAllGaitsPPO())

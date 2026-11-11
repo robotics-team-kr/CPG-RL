@@ -42,3 +42,44 @@ For native playback, omit `--headless`. On macOS, replace `cpg-play` with `mjpyt
 Checkpoints are saved under `logs/`. Resume and playback require the matching `--task` and the checkpoint's adjacent `run_config.json`. Configuration: [config.py](legged_gym/envs/mini_cheetah/config.py). More options: `cpg-train --help` and `cpg-play --help`.
 
 Licenses: [LICENSE](LICENSE), [licenses/](licenses/). Robot asset sources, inertia corrections and redistribution notes: [provenance.json](resources/robots/provenance.json).
+
+## Experimental CPG–Reflex cooperative runner
+
+A separate `mini_cheetah_coop_allgaits` task combines a frozen 100 Hz AllGaits
+policy, a 20 Hz CPG residual, and a 100 Hz spatial/optional phase reflex. Legacy
+training and checkpoint contracts are preserved. This is a simulation research
+implementation, not a validated locomotion result or a sim-to-real claim.
+
+```bash
+BASE=/path/to/allgaits/model.pt
+python -m legged_gym.scripts.inspect_baseline --checkpoint "$BASE"
+python -m legged_gym.scripts.profile_coop --base-checkpoint "$BASE" --device cpu
+python -m legged_gym.scripts.train_coop --base-checkpoint "$BASE" \
+  --config configs/coop_allgaits.json --stage reflex_only --iterations 100 \
+  --num-envs 64 --device cpu --out logs/reflex_seed40
+python -m unittest discover -s tests -v
+```
+
+The base must be a **68D/8D AllGaits** checkpoint with its original
+`run_config.json`; 84D CPG checkpoints are incompatible. Available stages include
+`slow_only`, `sequential`, `cooperative_spatial`, `cooperative_phase`, `no_message`,
+`same_rate_100`, `same_rate_20`, and `monolithic`. Use branch checkpoints for warm
+starts, or `--resume` with identical configuration, source code, runtime versions,
+and learner device for full state recovery.
+Independent merge and the frozen base are evaluation-only methods. Batch size
+and CPU/MPS choice must be profiled for the new runner. Count warm-start data in
+method budgets; iteration counts alone are not interaction-budget equivalence.
+
+`eval_coop` consumes a model manifest and a shared scenario manifest, writes
+per-episode CSV and optional traces, and evaluates each scenario's first episode.
+`analyze_coop` reports seed-level summaries, paired hierarchical bootstrap,
+per-terrain/per-gait metrics, and optional figures. `render_coop` produces a
+simulation video. Install `pip install -e '.[analysis]'` for figures/video.
+See [the Korean usage guide](README.ko.md) for complete commands and manifest
+examples. The four supplied scenarios are examples, not a publication test set.
+
+Actor velocity/contact are ideal simulated measurements with optional corruption;
+actor slip features are zero. Energy metrics are mechanical, not electrical.
+COT is conditioned on completing a straight course with >1 m net progress;
+report full completion/failure rates alongside paired successful-episode COT.
+No long multi-seed training or hardware validation is implied by the smoke tests.

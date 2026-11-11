@@ -52,6 +52,8 @@ class TaskRegistry:
         return env, env_cfg
 
     def make_alg_runner(self, env, name, args=None, train_cfg=None, log_root="default"):
+        if name == "mini_cheetah_coop_allgaits":
+            raise ValueError("Use python -m legged_gym.scripts.train_coop for the dual-rate task")
         args = get_args() if args is None else args
         if train_cfg is None:
             _, train_cfg = self.get_cfgs(name, args)

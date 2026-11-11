@@ -109,6 +109,11 @@ def get_args(argv=None, *, playback=False):
     parser.add_argument("--seed", type=int)
     parser.add_argument("--max_iterations", "--max-iterations", type=int)
     parser.add_argument("--learning_rate", type=float)
+    parser.add_argument(
+        "--allgaits_profile",
+        choices=["entropy0", "bounded", "bounded_yaw"],
+        help="Fresh AllGaits training only; checkpoint configuration is used for resume/playback",
+    )
     parser.add_argument("--observation", choices=["full", "medium"])
     parser.add_argument("--coupling", type=float, help="Coupling weight: CPG default 0, AllGaits default 10")
     parser.add_argument(
@@ -137,6 +142,10 @@ def get_args(argv=None, *, playback=False):
         parser.add_argument("--eval_seeds", nargs="+", type=int)
         parser.add_argument("--eval_output")
     args = parser.parse_args(argv)
+    if args.allgaits_profile and (
+        args.task != "mini_cheetah_allgaits" or playback or args.resume or args.checkpoint_path
+    ):
+        parser.error("--allgaits_profile requires fresh mini_cheetah_allgaits training")
     if args.gait is not None and args.task != "mini_cheetah_allgaits":
         parser.error("--gait requires --task mini_cheetah_allgaits")
     if not playback:
@@ -176,6 +185,10 @@ def get_args(argv=None, *, playback=False):
 
 
 def update_cfg_from_args(env_cfg, train_cfg, args):
+    if getattr(args, "allgaits_profile", None) and env_cfg is not None and train_cfg is not None:
+        from .allgaits_profiles import apply_allgaits_profile
+
+        apply_allgaits_profile(env_cfg, train_cfg, args.allgaits_profile)
     for cfg in (env_cfg, train_cfg):
         if cfg is not None and args.seed is not None:
             cfg.seed = args.seed

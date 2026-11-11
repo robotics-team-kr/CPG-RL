@@ -13,6 +13,12 @@ dependencies = ["mujoco==3.17.0", "rsl-rl-lib==5.5.2", "torch>=2.6,<3", "numpy>=
 [project.scripts]
 cpg-train = "legged_gym.scripts.train:main"
 cpg-play = "legged_gym.scripts.play:main"
+cpg-inspect = "legged_gym.scripts.inspect_baseline:main"
+cpg-train-coop = "legged_gym.scripts.train_coop:main"
+cpg-eval-coop = "legged_gym.scripts.eval_coop:main"
+
+[project.optional-dependencies]
+analysis = ["matplotlib>=3.8", "imageio>=2.34", "imageio-ffmpeg>=0.5"]
 
 [tool.setuptools.package-dir]
 "legged_gym.resources" = "resources"
@@ -21,7 +27,7 @@ cpg-play = "legged_gym.scripts.play:main"
 "legged_gym.resources" = ["robots/*.json", "robots/mini_cheetah/*.xml", "robots/mini_cheetah/meshes/*.stl", "robots/mini_cheetah/urdf/*.urdf"]
 
 [tool.setuptools]
-packages = ["legged_gym", "legged_gym.envs", "legged_gym.envs.base", "legged_gym.envs.mini_cheetah", "legged_gym.sim", "legged_gym.scripts", "legged_gym.utils", "legged_gym.resources"]
+packages = ["legged_gym", "legged_gym.algorithms", "legged_gym.envs", "legged_gym.envs.base", "legged_gym.envs.mini_cheetah", "legged_gym.sim", "legged_gym.scripts", "legged_gym.utils", "legged_gym.resources"]
 
 [tool.ruff]
 line-length = 120

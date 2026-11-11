@@ -1,0 +1,21 @@
+{
+  "settings": {
+    "fixed_start": true,
+    "gait_names": ["walk", "trot"],
+    "terrain": "irregular",
+    "terrain_seed": 40,
+    "randomize_terrain": true,
+    "randomize_dynamics": true,
+    "terrain_height": 0.025,
+    "course_length": 4.0,
+    "phase_enabled": false,
+    "slow_interval": 5,
+    "reflex_interval": 1
+  },
+  "ppo": {
+    "rollout_steps": 200,
+    "hidden": [256, 256],
+    "epochs": 4,
+    "minibatches": 4
+  }
+}

@@ -148,6 +148,8 @@ class MiniCheetahAllGaitsCfg(MiniCheetahCfg):
 
 
 class MiniCheetahAllGaitsPPO(MiniCheetahPPO):
+    baseline_profile = "legacy"
+
     class runner(MiniCheetahPPO.runner):
         experiment_name = "mini_cheetah_allgaits"
 

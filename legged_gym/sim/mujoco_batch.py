@@ -65,6 +65,10 @@ def load_model(cfg):
         rgba="0.25 0.3 0.35 1",
         condim="3",
     )
+    if getattr(cfg, "coop_settings", None) is not None:
+        from .coop_terrain import add_course
+
+        add_course(world, cfg)
     ET.SubElement(world, "light", name="task_light", pos="0 0 4", dir="0 0 -1", directional="true")
     bodies = {body.get("name"): body for body in world.iter("body")}
     bodies[cfg.asset.root_body].set("pos", " ".join(map(str, cfg.init_state.pos)))
@@ -150,6 +154,12 @@ def load_model(cfg):
             reduce="none",
             num="1",
         )
+    if getattr(cfg.asset, "contact_all_terrain", False):
+        # An unspecified second contact object matches all collision partners.
+        # Include nonfoot sensors too: torso contact with a step must terminate.
+        for sensor in sensors.findall("contact"):
+            if sensor.get("geom2") == "floor":
+                del sensor.attrib["geom2"]
     model = mujoco.MjModel.from_xml_string(ET.tostring(root, encoding="unicode"))
     return model
 
@@ -246,9 +256,9 @@ class MujocoBatch:
         self.qpos = self.qvel = self.ctrl = self.xpos = self.sensordata = None
         self.batch = None
 
-    def step(self, targets):
+    def step(self, targets, ids=None):
         self.ctrl[:] = targets
-        self.batch.step(stage=mujoco.mjtStage.mjSTAGE_NONE)
+        self.batch.step(ids, stage=mujoco.mjtStage.mjSTAGE_NONE)
         bad_state_warnings = [
             int(mujoco.mjtWarning.mjWARN_BADQPOS),
             int(mujoco.mjtWarning.mjWARN_BADQVEL),

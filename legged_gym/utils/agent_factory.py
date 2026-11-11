@@ -60,16 +60,23 @@ class TerminalPPO(PPO):
 
 
 def runner_config(cfg):
+    distribution = getattr(cfg.policy, "action_distribution", "gaussian")
+    if distribution == "gaussian":
+        distribution_cfg = {
+            "class_name": "rsl_rl.modules:GaussianDistribution",
+            "std_type": "scalar",
+            "init_std": cfg.policy.init_noise_std,
+        }
+    elif distribution == "beta":
+        distribution_cfg = {"class_name": "rsl_rl.modules:BetaDistribution", "action_range": [-1.0, 1.0]}
+    else:
+        raise ValueError(f"Unknown action distribution: {distribution}")
     actor = {
         "class_name": "rsl_rl.models:MLPModel",
         "hidden_dims": cfg.policy.actor_hidden_dims,
         "activation": cfg.policy.activation,
         "obs_normalization": cfg.policy.obs_normalization,
-        "distribution_cfg": {
-            "class_name": "rsl_rl.modules:GaussianDistribution",
-            "std_type": "scalar",
-            "init_std": cfg.policy.init_noise_std,
-        },
+        "distribution_cfg": distribution_cfg,
     }
     critic = {
         "class_name": "rsl_rl.models:MLPModel",

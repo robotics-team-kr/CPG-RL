@@ -145,6 +145,7 @@ class LeggedRobotCfgPPO(BaseConfig):
         save_interval = 100
 
     class policy:
+        action_distribution = "gaussian"
         # CPG-RL Table I: three ELU layers, shared actor/critic architecture.
         activation = "elu"
         actor_hidden_dims = [512, 256, 128]

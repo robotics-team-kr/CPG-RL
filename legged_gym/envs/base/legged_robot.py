@@ -63,6 +63,7 @@ class LeggedRobot(VecEnv):
         self.common_step_counter = 0
         shape = (self.num_envs, self.num_actions)
         self.actions = np.zeros(shape)
+        self.raw_actions = np.zeros(shape)
         self.last_actions = np.zeros(shape)
         self.dof_acc = np.zeros((self.num_envs, self.num_dof))
         self.commands = np.zeros((self.num_envs, 3))
@@ -94,6 +95,7 @@ class LeggedRobot(VecEnv):
                     for metric in ("command", "velocity", "tracking_mae", "tracking_rmse")
                 ]
                 + [f"contact_feet_{count}_fraction" for count in range(feet_shape[1] + 1)]
+                + ["action_clipped_fraction", "action_boundary_fraction", "raw_action_abs_mean"]
             )
         }
         self._liftoff_count = np.zeros(self.num_envs)
@@ -146,6 +148,12 @@ class LeggedRobot(VecEnv):
     def _update_diagnostics(self):
         # Retain the terminal sample for evaluation before step() auto-resets it.
         self.last_tracking_velocity = self.get_tracking_velocity()
+        self.last_diagnostic_pose = self.sim.qpos[:, :7].copy()
+        self._diagnostic_sums["raw_action_abs_mean"] += np.abs(self.raw_actions).mean(axis=1)
+        bound = self.cfg.control.clip_actions
+        if bound is not None:
+            self._diagnostic_sums["action_clipped_fraction"] += (np.abs(self.raw_actions) > bound).mean(axis=1)
+            self._diagnostic_sums["action_boundary_fraction"] += (np.abs(self.actions) >= 0.95 * bound).mean(axis=1)
         error = self.last_tracking_velocity - self.commands
         for index, axis in enumerate(("x", "y", "yaw")):
             self._diagnostic_sums[f"command_{axis}"] += self.commands[:, index]
@@ -226,6 +234,7 @@ class LeggedRobot(VecEnv):
         if actions.shape != self.actions.shape or not np.isfinite(actions).all():
             raise ValueError(f"Expected finite actions of shape {self.actions.shape}")
         self.last_actions[:] = self.actions
+        self.raw_actions[:] = actions
         self.actions[:] = actions
         if self.cfg.control.clip_actions is not None:
             np.clip(self.actions, -self.cfg.control.clip_actions, self.cfg.control.clip_actions, out=self.actions)
@@ -325,6 +334,7 @@ class LeggedRobot(VecEnv):
         self.sim.qvel[ids] = 0
         for values in (
             self.actions,
+            self.raw_actions,
             self.last_actions,
             self.feet_air_time,
             self.feet_contact_time,

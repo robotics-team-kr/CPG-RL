@@ -20,6 +20,11 @@ from legged_gym.utils.helpers import class_to_dict, set_seed
 from legged_gym.utils.task_registry import policy_contract
 
 
+def pose_yaw(pose):
+    w, x, y, z = pose[:, 3:7].T
+    return np.arctan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
+
+
 def summarize_evaluation(trials):
     """Pool tracking samples; retain failed and non-settling trials in rate denominators."""
     steps = sum(row["tracked_steps"] for row in trials)
@@ -44,6 +49,14 @@ def summarize_evaluation(trials):
             if steps
             else None
         )
+    for key in ("action_clipped_fraction", "action_boundary_fraction", "raw_action_abs_mean", "mean_yaw_rate"):
+        if all(key in row for row in trials):
+            summary[key] = sum((row[key] or 0) * row["tracked_steps"] for row in trials) / steps if steps else None
+    for key in ("max_lateral_deviation_m", "max_heading_deviation_rad", "forward_displacement_m"):
+        if all(key in row for row in trials):
+            summary[f"mean_{key}"] = float(np.mean([row[key] for row in trials]))
+    if all("max_lateral_deviation_m" in row for row in trials):
+        summary["corridor_exit_fraction"] = sum(row["max_lateral_deviation_m"] >= 1.4 for row in trials) / len(trials)
     return summary
 
 
@@ -69,6 +82,14 @@ def evaluate(env, policy, args, cfg):
             set_seed(seed)
             env.rng = np.random.default_rng(seed)
             env.reset()
+            origin = env.sim.qpos[:, :7].copy()
+            initial_yaw = previous_yaw = pose_yaw(origin)
+            heading = np.zeros(env.num_envs)
+            max_heading = np.zeros(env.num_envs)
+            max_lateral = np.zeros(env.num_envs)
+            forward = np.zeros(env.num_envs)
+            action_sums = np.zeros((env.num_envs, 3))
+            yaw_sum = np.zeros(env.num_envs)
             active = np.ones(env.num_envs, dtype=bool)
             counts = np.zeros(env.num_envs, dtype=int)
             survival_steps = np.zeros(env.num_envs, dtype=int)
@@ -88,12 +109,30 @@ def evaluate(env, policy, args, cfg):
                 for step in range(count):
                     if not active.any():
                         break
-                    obs, _, done, _ = env.step(policy(obs.to(args.rl_device)))
+                    action = policy(obs.to(args.rl_device))
+                    raw = action.detach().cpu().numpy()
+                    obs, _, done, _ = env.step(action)
+                    # Captured before auto-reset, including a failed terminal step.
+                    pose = env.last_diagnostic_pose
+                    yaw = pose_yaw(pose)
+                    heading[active] += ((yaw - previous_yaw + np.pi) % (2 * np.pi) - np.pi)[active]
+                    previous_yaw = yaw
+                    max_heading[active] = np.maximum(max_heading[active], np.abs(heading[active]))
+                    delta = pose[:, :2] - origin[:, :2]
+                    lateral = -np.sin(initial_yaw) * delta[:, 0] + np.cos(initial_yaw) * delta[:, 1]
+                    max_lateral[active] = np.maximum(max_lateral[active], np.abs(lateral[active]))
+                    forward[active] = (np.cos(initial_yaw) * delta[:, 0] + np.sin(initial_yaw) * delta[:, 1])[active]
                     if np.any(active & done.numpy() & ~env.terminated_buf):
                         raise RuntimeError("Evaluation timed out; its episode horizon must include warmup and tracking")
                     failed = active & env.terminated_buf
                     survival_steps[active] += 1
                     if stage == "tracking":
+                        bound = env.cfg.control.clip_actions
+                        action_sums[active, 2] += np.abs(raw[active]).mean(axis=1)
+                        if bound is not None:
+                            action_sums[active, 0] += (np.abs(raw[active]) > bound).mean(axis=1)
+                            action_sums[active, 1] += (np.abs(raw[active]) >= 0.95 * bound).mean(axis=1)
+                        yaw_sum[active] += env.last_tracking_velocity[active, 2]
                         error = env.last_tracking_velocity - target
                         absolute[active] += np.abs(error[active])
                         squared[active] += np.square(error[active])
@@ -120,7 +159,16 @@ def evaluate(env, policy, args, cfg):
                     "contact_failure": bool(contact[index]),
                     "survival_s": float(survival_steps[index] * env.dt),
                     "settling_time_s": float(settling[index]) if np.isfinite(settling[index]) else None,
+                    "max_lateral_deviation_m": float(max_lateral[index]),
+                    "max_heading_deviation_rad": float(max_heading[index]),
+                    "final_heading_deviation_rad": float(heading[index]),
+                    "forward_displacement_m": float(forward[index]),
+                    "mean_yaw_rate": float(yaw_sum[index] / counts[index]) if counts[index] else None,
                 }
+                for column, metric in enumerate(
+                    ("action_clipped_fraction", "action_boundary_fraction", "raw_action_abs_mean")
+                ):
+                    row[metric] = float(action_sums[index, column] / counts[index]) if counts[index] else None
                 for column, axis in enumerate(("x", "y", "yaw")):
                     row[f"mae_{axis}"] = float(absolute[index, column] / counts[index]) if counts[index] else None
                     row[f"rmse_{axis}"] = (
@@ -145,7 +193,7 @@ def evaluate(env, policy, args, cfg):
                 )
     checkpoint = Path(args.checkpoint_path).resolve()
     protocol = {
-        "version": 1,
+        "version": 2,
         "seeds": list(seeds),
         "num_envs": env.num_envs,
         "dt": env.dt,
@@ -158,6 +206,8 @@ def evaluate(env, policy, args, cfg):
         "observation_noise": False,
         "domain_randomization": False,
         "reset_distribution": "Task root XY/yaw and configured CPG geometry, controlled by evaluation seeds",
+        "trajectory_frame": "Initial root XY and heading, including warmup through first failure/end; open-loop zero yaw-rate command, no heading controller",
+        "corridor_half_width_m": 1.4,
     }
     if hasattr(env.cfg, "gait"):
         protocol["gait"] = class_to_dict(env.cfg.gait)
@@ -178,6 +228,8 @@ def evaluate(env, policy, args, cfg):
             "survival": "Time observed before first failure or end of trial, including warmup; bounded by trial duration.",
             "settling": "First continuous all-axis tolerance window; time from command change. Null if not reached.",
             "mean_settling_time_s": "Mean among responders only; always interpret alongside settled_fraction and failure_rate.",
+            "actions": "Tracked samples only. Clipped: abs(raw action) > bound; boundary: abs(raw action) >= 0.95*bound. Bounded policies can still saturate near the boundary.",
+            "trajectory": "Initial-heading frame, including warmup and the first failure sample; no post-reset samples. Heading deviation is unwrapped. Lateral exit is diagnostic, not termination.",
         },
         "summary": summaries,
         "trials": trials,
